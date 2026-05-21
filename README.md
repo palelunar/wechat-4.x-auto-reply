@@ -27,7 +27,7 @@ pip install requests pyperclip pywinauto pywin32
 需要保持微信窗口可访问（不必前台，但不能最小化到托盘）
 仅支持文本消息
 
-##已知bug
+## 已知bug
 启动时会回复该聊天最后一句话，无论是哪一方发的
 
 ## Acknowledgments
