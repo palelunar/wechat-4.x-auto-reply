@@ -4,7 +4,8 @@ import pyperclip
 import subprocess
 import win32gui
 
-# ============ 配置 ============
+
+# ============ Config ============
 LM_STUDIO_URL = "http://127.0.0.1:1234/v1/chat/completions"
 MODEL = "deepseek-r1-distill-qwen-14b"
 SKILL_DIR = r"F:\skill"
@@ -12,6 +13,8 @@ THINK_OPEN = "&lt;think&gt;"
 THINK_CLOSE = "&lt;/think&gt;"
 MAX_HISTORY = 6
 # ==============================
+
+
 
 
 def load_skill():
@@ -23,17 +26,19 @@ def load_skill():
         with open(SKILL_DIR + "\\work.md", "r", encoding="utf-8") as f:
             work = f.read()
     except Exception:
-        print("Skill 文件未找到")
+        print("Skill File not found")
     return (
-        "你是盛皓安，用他的口吻和家人微信聊天。"
-        "回复15字以内，只输出回复内容，口语化，话少但关心人。"
-        "绝对不要编造信息，不知道就回不知道。"
-        "人格：" + persona + "风格：" + work
+        "You are a family member chatting on WeChat. "
+            "Reply in 15 words or less, colloquial and caring. "
+            "Never make things up. "
+            "Persona: " + persona + " Style: " + work
     )
 
 
+
+
 def clean_reply(text):
-    # 用字符串查找移除 think 块，不用正则
+    # Use string search to remove think blocks without regular expressions
     result = text
     while True:
         start = result.find(THINK_OPEN)
@@ -41,10 +46,11 @@ def clean_reply(text):
             break
         end = result.find(THINK_CLOSE, start)
         if end == -1:
-            # think 没闭合，截断了，丢弃后面所有
+            # The think block is unclosed and truncated, discard all subsequent content
             result = result[:start]
             break
         result = result[:start] + result[end + len(THINK_CLOSE):]
+
 
     result = result.strip()
     if "\n" in result:
@@ -52,11 +58,14 @@ def clean_reply(text):
     return result
 
 
+
+
 def get_reply(system_prompt, message, history):
     try:
         messages = [{"role": "system", "content": system_prompt}]
         messages.extend(history[-(MAX_HISTORY * 2):])
-        messages.append({"role": "user", "content": "家人说: " + message})
+        messages.append({"role": "user", "content": "Family member said:" + message})
+
 
         resp = requests.post(LM_STUDIO_URL, json={
             "model": MODEL,
@@ -66,21 +75,27 @@ def get_reply(system_prompt, message, history):
             "stream": False
         }, timeout=60)
 
+
         msg = resp.json()["choices"][0]["message"]
         text = msg.get("content", "")
+
 
         if not text or text.strip() == "":
             text = msg.get("reasoning_content", "")
 
+
         cleaned = clean_reply(text)
         if not cleaned:
-            print("[调试] 清理后为空，原始:", repr(text[:200]))
+            print("[Debug] Empty after cleaning, original:", repr(text[:200]))
             return None
         return cleaned
 
+
     except Exception as e:
-        print("API错误:", e)
+        print("API error:", e)
         return None
+
+
 
 
 def read_messages():
@@ -101,6 +116,8 @@ def read_messages():
         return []
 
 
+
+
 def send_message(text):
     hwnd = win32gui.FindWindow(None, "微信")
     if hwnd:
@@ -115,35 +132,42 @@ def send_message(text):
     subprocess.run(["powershell", "-Command", cmd2], capture_output=True)
 
 
+
+
 def main():
     # 检查 LM Studio
     try:
         requests.get("http://127.0.0.1:1234/v1/models", timeout=5)
-        print("LM Studio 连接成功")
+        print("LM Studio Connection succeeded")
     except Exception:
-        print("LM Studio 未启动，请先启动 Server")
+        print("LM Studio is not running. Please start the Server first.")
         return
 
+
     system_prompt = load_skill()
-    print("Skill 加载成功")
+    print("Skill loaded successfully")
+
 
     hwnd = win32gui.FindWindow(None, "微信")
     if not hwnd:
-        print("未找到微信窗口，请先打开微信")
+        print("WeChat window not found, please open WeChat first")
         return
-    print("微信连接成功")
+    print("WeChat connected successfully")
+
 
     print()
     print("=" * 40)
-    print("自动回复已启动")
-    print("模型:", MODEL)
-    print("Ctrl+C 停止")
+    print("Auto-reply enabled")
+    print("model:", MODEL)
+    print("Ctrl+C to stop")
     print("=" * 40)
     print()
+
 
     sent_replies = []
     history = []
     last_processed = ""
+
 
     while True:
         try:
@@ -151,43 +175,54 @@ def main():
             if texts:
                 newest = texts[-1]
 
-                # 跳过已处理的消息
+
+                # Skip processed messages
                 if newest == last_processed:
                     time.sleep(3)
                     continue
-                # 跳过自己发的回复
+                # Skip replies sent by yourself
                 if newest in sent_replies:
                     time.sleep(3)
                     continue
 
-                print("[收到]", newest[:50])
+
+                print("[Received]", newest[:50])
                 reply = get_reply(system_prompt, newest, history)
+
 
                 if reply and len(reply) > 0:
                     sent_replies.append(reply)
                     if len(sent_replies) > 10:
                         sent_replies.pop(0)
 
+
                     history.append({"role": "user", "content": newest})
                     history.append({"role": "assistant", "content": reply})
 
-                    print("[回复]", reply)
+
+                    print("[Reply]", reply)
                     send_message(reply)
                     last_processed = newest
                     time.sleep(5)
                 else:
-                    print("[跳过] 生成失败")
+                    print("[Skip] Generation failed")
                     last_processed = newest
+
 
             time.sleep(3)
 
+
         except KeyboardInterrupt:
-            print("\n已停止")
+            print("\nStopped")
             break
         except Exception as e:
-            print("错误:", e)
+            print("error:", e)
             time.sleep(5)
+
+
 
 
 if __name__ == "__main__":
     main()
+
+
