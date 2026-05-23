@@ -19,7 +19,8 @@ pip install requests pyperclip pywinauto pywin32
 
 ## 配置
 
-编辑 auto_reply.py 顶部修改模型地址、回复风格等。
+1.编辑 auto_reply.py 顶部修改模型地址、回复风格等。
+2.将用claud code训练好的skill的文件放在代码的同一文件目录下
 
 
 ## 已知限制
