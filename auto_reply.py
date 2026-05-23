@@ -7,8 +7,8 @@ import win32gui
 
 # ============ Config ============
 LM_STUDIO_URL = "http://127.0.0.1:1234/v1/chat/completions"
-MODEL = "deepseek-r1-distill-qwen-14b"
-SKILL_DIR = r"F:\skill"
+MODEL = "your model name"
+SKILL_DIR = r"The location of the file"
 THINK_OPEN = "&lt;think&gt;"
 THINK_CLOSE = "&lt;/think&gt;"
 MAX_HISTORY = 6
